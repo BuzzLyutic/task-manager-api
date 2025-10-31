@@ -11,6 +11,10 @@ import (
 	"time"
 
 	"github.com/BuzzLyutic/task-manager-api/internal/config"
+	"github.com/BuzzLyutic/task-manager-api/internal/repo"
+	"github.com/BuzzLyutic/task-manager-api/internal/handler"
+	"github.com/BuzzLyutic/task-manager-api/internal/service"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -37,6 +41,10 @@ func main() {
 	}
 	logger.Info("Successfully connected to the Database!")
 
+	taskRepo := repo.NewTaskRepo(pool)
+	taskService := service.NewTaskService(taskRepo)
+	taskHandler := handler.NewTaskHandler(taskService, logger)
+
 	r := chi.NewRouter() // Создаем роутер
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
@@ -50,6 +58,13 @@ func main() {
 	})
 
 	// TODO: хэндлеры
+	r.Route("/api/tasks", func(r chi.Router) {
+		r.Post("/", taskHandler.Create)
+		r.Get("/", taskHandler.List)
+		r.Get("/{id}", taskHandler.Get)
+		r.Patch("/{id}", taskHandler.Update)
+		r.Delete("/{id}", taskHandler.Delete)
+	})
 
 	srv := http.Server{ // Создаем сервер
 		Addr: ":" + cfg.Port,
