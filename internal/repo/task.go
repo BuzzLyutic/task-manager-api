@@ -20,6 +20,12 @@ type TaskRepo struct { // Репозиторий для работы непос�
 	pool *pgxpool.Pool
 }
 
+type Stats struct {
+	ByStatus      map[string]int `json:"by_status"`
+	AvgProcessing float64        `json:"avg_processing_seconds"`
+	TotalTasks    int            `json:"total_tasks"`
+}
+
 func NewTaskRepo(pool *pgxpool.Pool) *TaskRepo { // Конструктор
 	return &TaskRepo{
 		pool: pool,
@@ -138,4 +144,33 @@ func (r *TaskRepo) mapError(err error) error { // ЗАЧЕМ
 		}
 	}
 	return err
+}
+
+func (r *TaskRepo) GetStats(ctx context.Context) (Stats, error) {
+	var stats Stats
+	stats.ByStatus = make(map[string]int)
+
+	// Статусы
+	rows, err := r.pool.Query(ctx, "SELECT status, count(*) FROM tasks GROUP BY status")
+	if err != nil {
+		return stats, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var status string
+		var count int
+		rows.Scan(&status, &count)
+		stats.ByStatus[status] = count
+		stats.TotalTasks += count
+	}
+
+	// Среднее время (для completed задач где есть оба timestamps)
+	err = r.pool.QueryRow(ctx, `
+        SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (updated_at - created_at))), 0)
+        FROM tasks
+        WHERE status = 'completed'
+    `).Scan(&stats.AvgProcessing)
+
+	return stats, err
 }

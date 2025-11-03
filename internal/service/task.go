@@ -68,6 +68,10 @@ func (s *TaskService) Delete(ctx context.Context, id int64) error {
 	return s.repo.Delete(ctx, id)
 }
 
+func (s *TaskService) GetStats(ctx context.Context) (repo.Stats, error) {
+    return s.repo.GetStats(ctx)
+}
+
 func (s *TaskService) validate(t model.Task) error {
 	if strings.TrimSpace(t.Title) == "" {
 		return ErrValidation

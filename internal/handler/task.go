@@ -109,6 +109,16 @@ func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+
+func (h *TaskHandler) Stats(w http.ResponseWriter, r *http.Request) {
+    stats, err := h.service.GetStats(r.Context())
+    if err != nil {
+        h.handleErrors(w, r, err)
+        return
+    }
+    respond.JSON(w, r, http.StatusOK, stats)
+}
+
 func (h *TaskHandler) handleErrors(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case errors.Is(err, repo.ErrorNotFound):

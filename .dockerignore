@@ -1,0 +1,16 @@
+.git
+.gitignore
+.env
+*.md
+Makefile
+
+app
+task-manager
+
+.vscode
+.idea
+
+*.log
+*.tmp
+
+*_test.go

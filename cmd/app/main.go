@@ -11,9 +11,10 @@ import (
 	"time"
 
 	"github.com/BuzzLyutic/task-manager-api/internal/config"
-	"github.com/BuzzLyutic/task-manager-api/internal/repo"
 	"github.com/BuzzLyutic/task-manager-api/internal/handler"
+	"github.com/BuzzLyutic/task-manager-api/internal/repo"
 	"github.com/BuzzLyutic/task-manager-api/internal/service"
+	"github.com/BuzzLyutic/task-manager-api/internal/worker"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -62,6 +63,7 @@ func main() {
 		r.Post("/", taskHandler.Create)
 		r.Get("/", taskHandler.List)
 		r.Get("/{id}", taskHandler.Get)
+		r.Get("/api/stats", taskHandler.Stats)
 		r.Patch("/{id}", taskHandler.Update)
 		r.Delete("/{id}", taskHandler.Delete)
 	})
@@ -80,12 +82,17 @@ func main() {
 		}
 	}()
 
+	workerPool := worker.NewPool(pool, logger, cfg.WorkerCount)
+	workerPool.Start(context.Background())
+
 	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	<-quit
 
 	logger.Info("Shutting down server...")
+	workerPool.Stop()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10 * time.Second)
 	defer cancel()
 
