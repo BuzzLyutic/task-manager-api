@@ -14,10 +14,10 @@ var (
 )
 
 type TaskService struct {
-	repo *repo.TaskRepo
+	repo repo.TaskRepository
 }
 
-func NewTaskService(repo *repo.TaskRepo) *TaskService {
+func NewTaskService(repo repo.TaskRepository) *TaskService {
 	return &TaskService{repo: repo}
 }
 
